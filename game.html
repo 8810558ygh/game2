@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>卷王大战</title>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        button { margin: 5px; padding: 8px; }
+        #status { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div id="status"></div>
+    <div id="actions"></div>
+    <div id="log"></div>
+
+<script>
+let gameState = {
+    playerHP: 3,
+    computerHP: 3,
+    playerScrolls: 0,
+    computerScrolls: 0,
+    round: 1
+};
+
+const moves = ['卷', '反卷', '躺平', '破防', '捧杀', '摆烂'];
+
+function updateStatus() {
+    document.getElementById('status').innerHTML = `
+        <h3>第 ${gameState.round} 回合</h3>
+        <p>你的血量: ${gameState.playerHP} ❤️ | 卷轴: ${gameState.playerScrolls} 📜</p >
+        <p>电脑血量: ${gameState.computerHP} ❤️ | 卷轴: ${gameState.computerScrolls} 📜</p >
+    `;
+}
+
+function computerAI() {
+    let validMoves = [];
+    
+    if (gameState.computerScrolls === 0 && gameState.playerScrolls === 0) {
+        validMoves = ['卷'];
+    } else if (gameState.playerScrolls > 0 && gameState.playerScrolls < 3) {
+        validMoves = ['卷', '躺平'];
+    } else if (gameState.playerScrolls >= 3) {
+        validMoves = ['卷', '躺平', '摆烂'];
+    }
+
+    if (gameState.computerScrolls > 0) {
+        if (gameState.playerScrolls === 0) {
+            validMoves = ['卷', '反卷', '捧杀', '破防'].filter(move => {
+                if (move === '反卷' && gameState.computerScrolls < 1) return false;
+                if (move === '捧杀' && gameState.computerScrolls < 3) return false;
+                return true;
+            });
+        }
+    }
+    
+    return validMoves[Math.floor(Math.random() * validMoves.length)] || '卷';
+}
+
+function battle(playerMove) {
+    const computerMove = computerAI();
+    let log = `你出招：${playerMove}<br>电脑出招：${computerMove}<br>`;
+
+    // 处理玩家动作
+    if (playerMove === '卷') {
+        gameState.playerScrolls++;
+    } else if (playerMove === '反卷') {
+        gameState.playerScrolls--;
+        if (computerMove !== '躺平') {
+            gameState.computerHP--;
+        }
+    } else if (playerMove === '捧杀') {
+        gameState.playerScrolls -= 3;
+        if (computerMove !== '摆烂') {
+            gameState.computerHP -= 2;
+        }
+    } else if (playerMove === '破防') {
+        gameState.playerScrolls--;
+        if (['躺平', '摆烂'].includes(computerMove)) {
+            gameState.computerHP--;
+        }
+    }
+
+    // 处理电脑动作
+    if (computerMove === '卷') {
+        gameState.computerScrolls++;
+    } else if (computerMove === '反卷') {
+        gameState.computerScrolls--;
+        if (playerMove !== '躺平') {
+            gameState.playerHP--;
+        }
+    } else if (computerMove === '捧杀') {
+        gameState.computerScrolls -= 3;
+        if (playerMove !== '摆烂') {
+            gameState.playerHP -= 2;
+        }
+    } else if (computerMove === '破防') {
+        gameState.computerScrolls--;
+        if (['躺平', '摆烂'].includes(playerMove)) {
+            gameState.playerHP--;
+        }
+    }
+
+    // 更新日志
+    document.getElementById('log').innerHTML = log;
+    gameState.round++;
+
+    checkGameOver();
+    updateStatus();
+    createButtons();
+}
+
+function checkGameOver() {
+    if (gameState.playerHP <= 0 && gameState.computerHP <= 0) {
+        alert("平局！");
+        resetGame();
+    } else if (gameState.playerHP <= 0) {
+        alert("你输了！");
+        resetGame();
+    } else if (gameState.computerHP <= 0) {
+        alert("你赢了！");
+        resetGame();
+    }
+}
+
+function resetGame() {
+    gameState = {
+        playerHP: 3,
+        computerHP: 3,
+        playerScrolls: 0,
+        computerScrolls: 0,
+        round: 1
+    };
+    updateStatus();
+    createButtons();
+    document.getElementById('log').innerHTML = '';
+}
+
+function createButtons() {
+    const actionsDiv = document.getElementById('actions');
+    actionsDiv.innerHTML = '';
+    
+    moves.forEach(move => {
+        const btn = document.createElement('button');
+        btn.innerHTML = move;
+        btn.onclick = () => handleMove(move);
+        actionsDiv.appendChild(btn);
+        
+        // 禁用无效操作
+        if (move === '反卷' && gameState.playerScrolls < 1) btn.disabled = true;
+        if (move === '捧杀' && gameState.playerScrolls < 3) btn.disabled = true;
+    });
+}
+
+function handleMove(move) {
+    if (['反卷', '捧杀', '破防'].includes(move)) {
+        if (move === '反卷' && gameState.playerScrolls < 1) return;
+        if (move === '捧杀' && gameState.playerScrolls < 3) return;
+    }
+    battle(move);
+}
+
+// 初始化游戏
+updateStatus();
+createButtons();
+</script>
+</body>
+</html>
